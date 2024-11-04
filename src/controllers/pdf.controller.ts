@@ -20,11 +20,13 @@ export default {
     );
 
     try {
-      const doc = new PDFDocument();
+      const doc = await genereatePdf(req.body as PdfCreate);
+
       doc.pipe(res);
 
-      genereatePdf(doc, req.body as PdfCreate);
       res.status(200);
+
+      doc.end();
       return;
     } catch (_) {
       res.status(500).send();
