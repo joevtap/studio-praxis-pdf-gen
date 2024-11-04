@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <button onclick="handleReport(event)">Baixar relatório</button>
+
+    <script>
+      async function handleReport(event) {
+        event.preventDefault();
+        const options = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token:
+              "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwZXJtaXNzaW9ucyI6WyJnZW5lcmF0ZS1wZGYiXSwiaWF0IjoxNzMwNTgzMTMwLCJleHAiOjE3NjIxNDA3MzB9.HVTAmBpvilJrNFMvTw7dqWOVXLx3fWeqTnBSXdizxj0",
+            images: [
+              {
+                url: "https://cdn.britannica.com/34/235834-050-C5843610/two-different-breeds-of-cats-side-by-side-outdoors-in-the-garden.jpg",
+                height: 300,
+              },
+              {
+                url: "https://cdn.britannica.com/70/234870-050-D4D024BB/Orange-colored-cat-yawns-displaying-teeth.jpg",
+                height: 300,
+              },
+              {
+                url: "https://cdn.theatlantic.com/thumbor/OgQgHFiqAd92pArI1zjmcUHjoSc=/144x0:2411x1700/1200x900/media/img/mt/2017/06/shutterstock_319985324/original.jpg",
+                height: 200,
+              },
+            ],
+            fileName: "relatorio-exemplo.pdf",
+            content: {
+              header: {
+                title: "Praxis Studio",
+                professionalName: "Kaoma Paiva Hodapp",
+                professionalNumber: "4/319187-F",
+              },
+              record: {
+                patientName: "Fulano de Tal",
+                title: "Ficha de evolução",
+                createdAt: "11-04-2024",
+              },
+              report: [
+                {
+                  title: "Relatos do paciente",
+                  content: [
+                    {
+                      text: "Hello world",
+                    },
+
+                    {
+                      text: "Escala de dor: 9",
+                    },
+                    {
+                      image: 1,
+                    },
+                  ],
+                },
+                {
+                  title: "Análise Inicial",
+                  content: [
+                    {
+                      text: "Palpação: Não sei",
+                    },
+                    {
+                      text: "Inspeção: também não faço ideia",
+                    },
+                    {
+                      text: "Edema: Sim | Rubor: Sim",
+                    },
+                  ],
+                },
+                {
+                  title: "Boneco",
+                  content: [
+                    {
+                      image: 0,
+                    },
+                  ],
+                },
+                {
+                  title: "Pilates",
+                  content: [
+                    {
+                      text: "Aparelho(s): Bastante",
+                    },
+                    {
+                      text: "Tipo de exercício: Que tem que mexer o corpo",
+                    },
+                    {
+                      text: "Observações: O céu é azul",
+                    },
+                  ],
+                },
+                {
+                  title: "Fotos",
+                  content: [
+                    {
+                      image: 0,
+                    },
+                    {
+                      image: 1,
+                    },
+                    {
+                      image: 2,
+                    },
+                  ],
+                },
+              ],
+            },
+          }),
+        };
+
+        const res = await fetch("http://localhost:8080/pdf", options);
+
+        if (res.ok) {
+          const blob = await res.blob();
+
+          const link = document.createElement("a");
+          link.download = `${new Date()
+            .toLocaleDateString("pt-br", { dateStyle: "short" })
+            .replace("/", "-")}-report.pdf`;
+
+          link.href = URL.createObjectURL(blob);
+          link.click();
+        }
+      }
+    </script>
+  </body>
+</html>
