@@ -16,13 +16,13 @@ import sizes from "../constants/sizes";
  *
  * The request object must have the structure defined in the PdfCreate type located in `src/middlewares/validate/pdf-validate-create.middleware.ts`.
  */
-export default async function genereatePdf(
+export default async function generatePdf(
   request: PdfCreate
 ): Promise<typeof PDFDocument> {
   const margin = 20;
   const rectWidth = sizes.A4_WIDTH - margin * 2;
 
-  let heightAcc = 0; // Used to control the height of the document
+  let heightAcc = margin; // Start with the top margin
 
   const options: PDFKit.PDFDocumentOptions = {
     size: "A4",
@@ -34,9 +34,7 @@ export default async function genereatePdf(
 
   const doc = new PDFDocument(options);
 
-  // Every time we add something to the document, we need to increment this value
-  heightAcc += 20; // In this case, we are adding 20 to the heightAcc for the top margin
-
+  // Header
   doc
     .fontSize(10)
     .fillColor("#cbb099")
@@ -61,7 +59,7 @@ export default async function genereatePdf(
     .fillColor("#cbb099")
     .text(
       request.content.header.professionalNumber.toUpperCase(),
-      20,
+      margin,
       heightAcc,
       {
         align: "right",
@@ -95,14 +93,21 @@ export default async function genereatePdf(
       new Date(request.content.record.createdAt).toLocaleDateString("pt-br", {
         dateStyle: "short",
       }),
-      20,
+      margin,
       heightAcc,
       {
         align: "right",
       }
     );
 
+  heightAcc += 20;
+
   for (const report of request.content.report) {
+    if (heightAcc + 70 > sizes.A4_HEIGHT - margin) {
+      doc.addPage();
+      heightAcc = margin;
+    }
+
     heightAcc += 30;
 
     doc.rect(margin, heightAcc, rectWidth, 40).fill("#ada7bd");
@@ -110,18 +115,19 @@ export default async function genereatePdf(
     doc
       .fontSize(14)
       .fillColor("#fff")
-      .text(report.title.toLocaleUpperCase(), margin + 10, heightAcc + 10);
+      .text(report.title.toUpperCase(), margin + 10, heightAcc + 10);
 
     heightAcc += 40;
 
     for (const reportContent of report.content) {
       if (reportContent.text) {
-        if (
-          heightAcc >
-          sizes.A4_HEIGHT - doc.heightOfString(reportContent.text)
-        ) {
+        const textHeight = doc.heightOfString(reportContent.text, {
+          width: rectWidth,
+        });
+
+        if (heightAcc + textHeight > sizes.A4_HEIGHT - margin) {
           doc.addPage();
-          heightAcc = 0;
+          heightAcc = margin;
         }
 
         heightAcc += 10;
@@ -129,11 +135,11 @@ export default async function genereatePdf(
         doc
           .fontSize(10)
           .fillColor("#000")
-          .text(reportContent.text, margin, heightAcc);
+          .text(reportContent.text, margin, heightAcc, {
+            width: rectWidth,
+          });
 
-        const nextHeight = doc.heightOfString(reportContent.text);
-
-        heightAcc += nextHeight;
+        heightAcc += textHeight;
       }
 
       if (
@@ -141,12 +147,11 @@ export default async function genereatePdf(
         request.images &&
         request.images[reportContent.image]
       ) {
-        if (
-          heightAcc >
-          sizes.A4_HEIGHT - request.images[reportContent.image].height
-        ) {
+        const imageHeight = request.images[reportContent.image].height;
+
+        if (heightAcc + imageHeight > sizes.A4_HEIGHT - margin) {
           doc.addPage();
-          heightAcc = 0;
+          heightAcc = margin;
         }
 
         heightAcc += 10;
@@ -156,7 +161,7 @@ export default async function genereatePdf(
 
           doc.image(file, margin, heightAcc, {
             width: request.images[reportContent.image].width,
-            height: request.images[reportContent.image].height,
+            height: imageHeight,
           });
 
           await fs.unlink(file);
@@ -164,15 +169,7 @@ export default async function genereatePdf(
           console.log(err);
         }
 
-        heightAcc += request.images[reportContent.image].height;
-
-        if (
-          heightAcc >
-          sizes.A4_HEIGHT - request.images[reportContent.image].height
-        ) {
-          doc.addPage();
-          heightAcc = 0;
-        }
+        heightAcc += imageHeight;
       }
     }
   }
